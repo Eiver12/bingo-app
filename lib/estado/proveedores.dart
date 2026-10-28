@@ -20,3 +20,7 @@ Provider((ref) => RepositorioPartidas(ref.watch(baseDatosProvider)));
 /// Lista de tablas que se actualiza sola al guardar o eliminar.
 final cartonesProvider = StreamProvider<List<Carton>>(
         (ref) => ref.watch(repositorioCartonesProvider).observarTodos());
+
+/// Balotas cantadas de una partida, en orden. Se actualiza sola.
+final balotasProvider = StreamProvider.family<List<int>, int>((ref, partidaId) =>
+    ref.watch(repositorioPartidasProvider).observarBalotas(partidaId));
