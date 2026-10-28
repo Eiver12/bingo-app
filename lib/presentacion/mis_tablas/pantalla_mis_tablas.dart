@@ -4,6 +4,7 @@ import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/estado/proveedores.dart';
 import 'package:bingo_app/presentacion/agregar_tabla/pantalla_agregar_tabla.dart';
 import 'package:bingo_app/presentacion/comun/cuadricula_carton.dart';
+import 'package:bingo_app/presentacion/nueva_partida/pantalla_nueva_partida.dart';
 
 class PantallaMisTablas extends ConsumerWidget {
   const PantallaMisTablas({super.key});
@@ -13,7 +14,19 @@ class PantallaMisTablas extends ConsumerWidget {
     final cartones = ref.watch(cartonesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis tablas')),
+      appBar: AppBar(
+        title: const Text('Mis tablas'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PantallaNuevaPartida()),
+            ),
+            icon: const Icon(Icons.play_arrow),
+            label: const Text('Jugar'),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => Navigator.push(
           context,
@@ -48,7 +61,8 @@ class PantallaMisTablas extends ConsumerWidget {
                       IconButton(
                         icon: const Icon(Icons.delete_outline),
                         tooltip: 'Eliminar',
-                        onPressed: () => _confirmarEliminar(context, ref, carton),
+                        onPressed: () =>
+                            _confirmarEliminar(context, ref, carton),
                       ),
                     ]),
                     CuadriculaCarton(carton: carton),

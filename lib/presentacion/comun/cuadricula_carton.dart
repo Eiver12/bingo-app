@@ -34,27 +34,42 @@ class CuadriculaCarton extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 3,
           crossAxisSpacing: 3,
-          children: [
-            for (var i = 0; i < 25; i++)
-              Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: resaltadas.contains(i)
-                      ? esquema.tertiaryContainer
-                      : marcadas.contains(i)
-                      ? esquema.primaryContainer
-                      : null,
-                  border: Border.all(color: esquema.outlineVariant),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  carton.numeroEn(i) == 0 ? '★' : '${carton.numeroEn(i)}',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-          ],
+          children: [for (var i = 0; i < 25; i++) _casilla(i, esquema)],
         ),
       ],
+    );
+  }
+
+  Widget _casilla(int i, ColorScheme esquema) {
+    final ganadora = resaltadas.contains(i);
+    final marcada = marcadas.contains(i);
+
+    final fondo = ganadora
+        ? esquema.tertiary          // color fuerte: figura ganadora
+        : marcada
+        ? esquema.primaryContainer
+        : esquema.surface;      // fondo neutro, distinto al de la tarjeta
+    final texto = ganadora
+        ? esquema.onTertiary
+        : marcada
+        ? esquema.onPrimaryContainer
+        : esquema.onSurface;
+
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: fondo,
+        border: Border.all(color: esquema.outlineVariant),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        carton.numeroEn(i) == 0 ? '★' : '${carton.numeroEn(i)}',
+        style: TextStyle(
+          fontSize: 16,
+          color: texto,
+          fontWeight: ganadora ? FontWeight.bold : null,
+        ),
+      ),
     );
   }
 }
