@@ -5,6 +5,7 @@ import 'package:bingo_app/datos/repositorio_partidas.dart';
 import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/datos/lector_ocr.dart';
 import 'package:bingo_app/datos/servicio_foto.dart';
+import 'package:bingo_app/dominio/partida.dart';
 
 /// Una sola base de datos para toda la app.
 final baseDatosProvider = Provider<BaseDatos>((ref) {
@@ -39,3 +40,8 @@ final lectorOcrProvider = Provider((ref) {
   ref.onDispose(lector.cerrar);
   return lector;
 });
+
+/// Partida sin terminar (null si no hay). Se actualiza sola.
+final partidaEnCursoProvider = StreamProvider<ConfigPartida?>(
+  (ref) => ref.watch(repositorioPartidasProvider).observarEnCurso(),
+);

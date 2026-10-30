@@ -96,20 +96,12 @@ class PantallaJuego extends ConsumerWidget {
     Set<int> cantadas,
   ) async {
     final figuras = config.figuras;
-    final ganadorasAntes = ordenarPorCercania(
-      cartones,
-      cantadas,
-      figuras,
-    ).where((e) => e.progreso.gano).length;
+    final ganadoras = recienGanadoras(cartones, cantadas, numero, figuras);
+    final aUna = recienAUnaBalota(cartones, cantadas, numero, figuras);
 
     await ref.read(repositorioPartidasProvider).cantar(config.id, numero);
 
-    final ganadoras = ordenarPorCercania(cartones, {
-      ...cantadas,
-      numero,
-    }, figuras).where((e) => e.progreso.gano).toList();
-
-    if (ganadoras.length > ganadorasAntes) {
+    if (ganadoras.isNotEmpty) {
       await HapticFeedback.heavyImpact();
       if (!context.mounted) return;
       await showDialog<void>(
@@ -127,6 +119,23 @@ class PantallaJuego extends ConsumerWidget {
           ],
         ),
       );
+    } else if (aUna.isNotEmpty) {
+      await HapticFeedback.mediumImpact();
+      if (!context.mounted) return;
+      final detalle = aUna
+          .map(
+            (e) =>
+                '${e.carton.alias} necesita el ${_conLetra(e.progreso.numerosFaltantes.first)}',
+          )
+          .join(' · ');
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('¡A una balota! $detalle'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
     }
   }
 
