@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
+import 'package:bingo_app/dominio/partida.dart';
 import 'package:bingo_app/estado/proveedores.dart';
 import 'package:bingo_app/presentacion/agregar_tabla/pantalla_agregar_tabla.dart';
 import 'package:bingo_app/presentacion/comun/cuadricula_carton.dart';
-import 'package:bingo_app/presentacion/nueva_partida/pantalla_nueva_partida.dart';
 import 'package:bingo_app/presentacion/escanear/pantalla_escanear.dart';
+import 'package:bingo_app/presentacion/juego/pantalla_juego.dart';
+import 'package:bingo_app/presentacion/nueva_partida/pantalla_nueva_partida.dart';
 
 class PantallaMisTablas extends ConsumerWidget {
   const PantallaMisTablas({super.key});
@@ -13,6 +15,7 @@ class PantallaMisTablas extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartones = ref.watch(cartonesProvider);
+    final enCurso = ref.watch(partidaEnCursoProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -59,13 +62,15 @@ class PantallaMisTablas extends ConsumerWidget {
         data: (lista) => lista.isEmpty
             ? const Center(
                 child: Text(
-                  'Aún no tienes tablas.\nAgrega la primera con el botón de abajo.',
+                  'Aún no tienes tablas.\n'
+                  'Escanea o agrega la primera con los botones de abajo.',
                   textAlign: TextAlign.center,
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
                 children: [
+                  if (enCurso != null) _TarjetaPartidaEnCurso(enCurso),
                   for (final carton in lista)
                     Card(
                       child: Padding(
@@ -126,5 +131,58 @@ class PantallaMisTablas extends ConsumerWidget {
     if (confirmado == true) {
       await ref.read(repositorioCartonesProvider).eliminar(carton.id!);
     }
+  }
+}
+
+class _TarjetaPartidaEnCurso extends ConsumerWidget {
+  const _TarjetaPartidaEnCurso(this.config);
+  final ConfigPartida config;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balotas = ref.watch(balotasProvider(config.id)).value?.length ?? 0;
+    final tema = Theme.of(context);
+
+    return Card(
+      color: tema.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Partida en curso', style: tema.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              '${config.descripcion} · ${config.cartonIds.length} '
+              '${config.cartonIds.length == 1 ? 'tabla' : 'tablas'} · '
+              '$balotas balotas cantadas',
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => ref
+                      .read(repositorioPartidasProvider)
+                      .finalizar(config.id),
+                  child: const Text('Descartar'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PantallaJuego(config: config),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Continuar'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

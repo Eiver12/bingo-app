@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../dominio/partida.dart';
 import '../dominio/tipo_juego.dart';
 import 'base_datos.dart';
 
@@ -8,12 +9,16 @@ class RepositorioPartidas {
   final BaseDatos _db;
 
   /// Crea la partida y le asocia las tablas en una sola transacción.
+  /// Si había otra partida sin terminar, la finaliza.
   Future<int> crear(
     TipoJuego tipo,
     List<int> cartonIds, {
     int? columnaDesignada,
   }) {
     return _db.transaction(() async {
+      await (_db.update(_db.partidas)..where((p) => p.finalizada.equals(false)))
+          .write(const PartidasCompanion(finalizada: Value(true)));
+
       final id = await _db
           .into(_db.partidas)
           .insert(
@@ -34,6 +39,24 @@ class RepositorioPartidas {
       }
       return id;
     });
+  }
+
+  /// La partida sin terminar, si existe. Se actualiza sola.
+  Stream<ConfigPartida?> observarEnCurso() {
+    final consulta = _db.select(_db.partidas)
+      ..where((p) => p.finalizada.equals(false))
+      ..orderBy([(p) => OrderingTerm.desc(p.id)])
+      ..limit(1);
+    return consulta.watchSingleOrNull().asyncMap(
+      (p) async => p == null
+          ? null
+          : ConfigPartida(
+              id: p.id,
+              tipo: p.tipoJuego,
+              cartonIds: await cartonesDe(p.id),
+              columnaDesignada: p.columnaDesignada,
+            ),
+    );
   }
 
   SimpleSelectStatement<$BalotasTable, Balota> _balotasDe(int partidaId) =>
