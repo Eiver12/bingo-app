@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import 'package:drift/drift.dart';
+
 import '../dominio/carton.dart';
 import 'base_datos.dart';
 
@@ -9,11 +11,15 @@ class RepositorioCartones {
 
   Future<int> guardar(Carton carton, {String? fotoPath}) {
     final plano = [for (final fila in carton.numeros) ...fila];
-    return _db.into(_db.cartones).insert(CartonesCompanion.insert(
-          alias: carton.alias,
-          numeros: jsonEncode(plano),
-          fotoPath: Value(fotoPath),
-        ));
+    return _db
+        .into(_db.cartones)
+        .insert(
+          CartonesCompanion.insert(
+            alias: carton.alias,
+            numeros: jsonEncode(plano),
+            fotoPath: Value(fotoPath),
+          ),
+        );
   }
 
   /// Emite la lista de nuevo cada vez que cambia la tabla en la base.
@@ -27,8 +33,10 @@ class RepositorioCartones {
 
   Carton _aDominio(CartonRegistro r) {
     final plano = (jsonDecode(r.numeros) as List).cast<int>();
-    return Carton(id: r.id, alias: r.alias, numeros: [
-      for (var f = 0; f < 5; f++) plano.sublist(f * 5, f * 5 + 5),
-    ]);
+    return Carton(
+      id: r.id,
+      alias: r.alias,
+      numeros: [for (var f = 0; f < 5; f++) plano.sublist(f * 5, f * 5 + 5)],
+    );
   }
 }

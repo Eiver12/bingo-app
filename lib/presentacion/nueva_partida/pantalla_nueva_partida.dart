@@ -10,7 +10,8 @@ class PantallaNuevaPartida extends ConsumerStatefulWidget {
   const PantallaNuevaPartida({super.key});
 
   @override
-  ConsumerState<PantallaNuevaPartida> createState() => _PantallaNuevaPartidaState();
+  ConsumerState<PantallaNuevaPartida> createState() =>
+      _PantallaNuevaPartidaState();
 }
 
 class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
@@ -30,7 +31,11 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
       MaterialPageRoute(
         builder: (_) => PantallaJuego(
           config: ConfigPartida(
-              id: id, tipo: _tipo, cartonIds: ids, columnaDesignada: columna),
+            id: id,
+            tipo: _tipo,
+            cartonIds: ids,
+            columnaDesignada: columna,
+          ),
         ),
       ),
     );
@@ -48,7 +53,9 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
         error: (e, _) => Center(child: Text('Error al cargar: $e')),
         data: (lista) {
           if (lista.isEmpty) {
-            return const Center(child: Text('Primero agrega al menos una tabla.'));
+            return const Center(
+              child: Text('Primero agrega al menos una tabla.'),
+            );
           }
           // Por defecto juegan todas las tablas.
           _seleccionadas ??= {for (final c in lista) c.id!};
@@ -62,17 +69,24 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
                 children: [
                   Text('Tipo de juego', style: tema.textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    for (final t in TipoJuego.values)
-                      ChoiceChip(
-                        label: Text(t.nombre),
-                        selected: _tipo == t,
-                        onSelected: (_) => setState(() => _tipo = t),
-                      ),
-                  ]),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final t in TipoJuego.values)
+                        ChoiceChip(
+                          label: Text(t.nombre),
+                          selected: _tipo == t,
+                          onSelected: (_) => setState(() => _tipo = t),
+                        ),
+                    ],
+                  ),
                   if (_tipo == TipoJuego.columna) ...[
                     const SizedBox(height: 16),
-                    Text('Columna que pidió el juez', style: tema.textTheme.titleMedium),
+                    Text(
+                      'Columna que pidió el juez',
+                      style: tema.textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 8),
                     SegmentedButton<int>(
                       segments: [
@@ -80,12 +94,15 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
                           ButtonSegment(value: i, label: Text(letras[i])),
                       ],
                       selected: {_columna},
-                      onSelectionChanged: (s) => setState(() => _columna = s.first),
+                      onSelectionChanged: (s) =>
+                          setState(() => _columna = s.first),
                     ),
                   ],
                   const SizedBox(height: 24),
-                  Text('Tablas que juegan (${seleccionadas.length})',
-                      style: tema.textTheme.titleMedium),
+                  Text(
+                    'Tablas que juegan (${seleccionadas.length})',
+                    style: tema.textTheme.titleMedium,
+                  ),
                   for (final c in lista)
                     CheckboxListTile(
                       title: Text(c.alias),

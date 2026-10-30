@@ -30,7 +30,9 @@ class Carton {
         }
         final (min, max) = rangosColumna[c];
         if (n < min || n > max) {
-          errores.add('Fila ${f + 1}, columna ${letras[c]}: $n no está entre $min y $max');
+          errores.add(
+            'Fila ${f + 1}, columna ${letras[c]}: $n no está entre $min y $max',
+          );
         }
         if (!vistos.add(n)) errores.add('El número $n está repetido');
       }

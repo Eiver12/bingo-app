@@ -10,7 +10,7 @@ class CuadriculaCarton extends StatelessWidget {
   });
 
   final Carton carton;
-  final Set<int> marcadas;   // casillas 0..24 ya cantadas
+  final Set<int> marcadas; // casillas 0..24 ya cantadas
   final Set<int> resaltadas; // casillas de la figura ganadora
 
   @override
@@ -19,14 +19,19 @@ class CuadriculaCarton extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(children: [
-          for (final l in letras)
-            Expanded(
-              child: Center(
-                child: Text(l, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Row(
+          children: [
+            for (final l in letras)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    l,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ),
-            ),
-        ]),
+          ],
+        ),
         const SizedBox(height: 4),
         GridView.count(
           crossAxisCount: 5,
@@ -45,10 +50,11 @@ class CuadriculaCarton extends StatelessWidget {
     final marcada = marcadas.contains(i);
 
     final fondo = ganadora
-        ? esquema.tertiary          // color fuerte: figura ganadora
+        ? esquema
+              .tertiary // color fuerte: figura ganadora
         : marcada
         ? esquema.primaryContainer
-        : esquema.surface;      // fondo neutro, distinto al de la tarjeta
+        : esquema.surface; // fondo neutro, distinto al de la tarjeta
     final texto = ganadora
         ? esquema.onTertiary
         : marcada
