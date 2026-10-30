@@ -7,6 +7,8 @@ import 'package:bingo_app/estado/proveedores.dart';
 import 'package:bingo_app/presentacion/juego/tabla_maestra.dart';
 import 'package:bingo_app/presentacion/juego/tarjeta_progreso.dart';
 
+String _conLetra(int n) => '${letras[(n - 1) ~/ 15]} $n';
+
 class PantallaJuego extends ConsumerWidget {
   const PantallaJuego({super.key, required this.config});
 
@@ -46,47 +48,54 @@ class PantallaJuego extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            children: [
-              Text(
-                ultima == null
-                    ? 'Toca cada número que cante el juez'
-                    : 'Balotas: ${balotas.length}  ·  Última: ${_conLetra(ultima)}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                flex: 3,
-                child: TablaMaestra(
-                  cantadas: cantadas,
-                  ultima: ultima,
-                  alTocar: (n) => _cantar(context, ref, n, cartones, cantadas),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                flex: 2,
-                child: ListView(
-                  children: [
-                    for (final e in estados)
-                      TarjetaProgreso(
-                        key: ValueKey(e.carton.id),
-                        estado: e,
-                        cantadas: cantadas,
+        child: LayoutBuilder(
+          builder: (context, caja) {
+            // Alto del panel cerrado: muestra solo el resumen.
+            final pico = (caja.maxHeight * 0.13).clamp(90.0, 140.0);
+            final minimo = pico / caja.maxHeight;
+
+            return Stack(
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, pico + 8),
+                  child: Column(
+                    children: [
+                      Text(
+                        ultima == null
+                            ? 'Toca cada número que cante el juez'
+                            : 'Balotas: ${balotas.length}  ·  Última: ${_conLetra(ultima)}',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                  ],
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: TablaMaestra(
+                          cantadas: cantadas,
+                          ultima: ultima,
+                          alTocar: (n) =>
+                              _cantar(context, ref, n, cartones, cantadas),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+                DraggableScrollableSheet(
+                  initialChildSize: minimo,
+                  minChildSize: minimo,
+                  maxChildSize: 0.85,
+                  snap: true,
+                  builder: (context, controlador) => _PanelTablas(
+                    controlador: controlador,
+                    estados: estados,
+                    cantadas: cantadas,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
-
-  String _conLetra(int n) => '${letras[(n - 1) ~/ 15]} $n';
 
   Future<void> _cantar(
     BuildContext context,
@@ -160,5 +169,112 @@ class PantallaJuego extends ConsumerWidget {
     if (confirmado != true) return;
     await ref.read(repositorioPartidasProvider).finalizar(config.id);
     if (context.mounted) Navigator.pop(context);
+  }
+}
+
+/// Panel inferior: resumen siempre visible y, al deslizarlo, todas las tablas.
+class _PanelTablas extends StatelessWidget {
+  const _PanelTablas({
+    required this.controlador,
+    required this.estados,
+    required this.cantadas,
+  });
+
+  final ScrollController controlador;
+  final List<EstadoTabla> estados;
+  final Set<int> cantadas;
+
+  @override
+  Widget build(BuildContext context) {
+    final esquema = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 8,
+      color: esquema.surfaceContainerLow,
+      clipBehavior: Clip.antiAlias,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: ListView(
+        controller: controlador,
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 24),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: esquema.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _Resumen(estados),
+          const SizedBox(height: 8),
+          for (final e in estados)
+            TarjetaProgreso(
+              key: ValueKey(e.carton.id),
+              estado: e,
+              cantadas: cantadas,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Una línea con la tabla más cercana a ganar.
+class _Resumen extends StatelessWidget {
+  const _Resumen(this.estados);
+  final List<EstadoTabla> estados;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context);
+    if (estados.isEmpty) return const Text('No hay tablas en esta partida');
+
+    final mejor = estados.first;
+    final p = mejor.progreso;
+    final estado = p.gano
+        ? '¡BINGO!'
+        : p.aUnaBalota
+        ? 'necesita el ${_conLetra(p.numerosFaltantes.first)}'
+        : 'faltan ${p.faltan}';
+    final color = p.gano
+        ? tema.colorScheme.tertiary
+        : p.aUnaBalota
+        ? tema.colorScheme.error
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Más cerca: ${mejor.carton.alias}',
+                style: tema.textTheme.titleSmall,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              estado,
+              style: TextStyle(color: color, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          value: p.porcentaje,
+          minHeight: 6,
+          borderRadius: BorderRadius.circular(3),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${estados.length} ${estados.length == 1 ? 'tabla' : 'tablas'}'
+          ' · desliza hacia arriba para verlas',
+          style: tema.textTheme.bodySmall,
+        ),
+      ],
+    );
   }
 }
