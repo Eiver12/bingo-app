@@ -16,30 +16,40 @@ class TablaMaestra extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final esquema = Theme.of(context).colorScheme;
-    return Column(children: [
-      Row(children: [
-        for (final l in letras)
-          Expanded(
-            child: Center(
-              child: Text(l,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-            ),
-          ),
-      ]),
-      const SizedBox(height: 4),
-      Expanded(
-        child: GridView.count(
-          crossAxisCount: 5,
-          childAspectRatio: 1.6,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
+    return Column(
+      children: [
+        Row(
           children: [
-            // Recorre fila por fila: posición k -> número de su columna.
-            for (var k = 0; k < 75; k++) _boton((k % 5) * 15 + (k ~/ 5) + 1, esquema),
+            for (final l in letras)
+              Expanded(
+                child: Center(
+                  child: Text(
+                    l,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
-      ),
-    ]);
+        const SizedBox(height: 4),
+        Expanded(
+          child: GridView.count(
+            crossAxisCount: 5,
+            childAspectRatio: 1.6,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+            children: [
+              // Recorre fila por fila: posición k -> número de su columna.
+              for (var k = 0; k < 75; k++)
+                _boton((k % 5) * 15 + (k ~/ 5) + 1, esquema),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _boton(int n, ColorScheme esquema) {

@@ -4,7 +4,11 @@ import 'package:bingo_app/dominio/progreso.dart';
 import 'package:bingo_app/presentacion/comun/cuadricula_carton.dart';
 
 class TarjetaProgreso extends StatelessWidget {
-  const TarjetaProgreso({super.key, required this.estado, required this.cantadas});
+  const TarjetaProgreso({
+    super.key,
+    required this.estado,
+    required this.cantadas,
+  });
 
   final EstadoTabla estado;
   final Set<int> cantadas;
@@ -29,8 +33,10 @@ class TarjetaProgreso extends StatelessWidget {
       color: p.gano ? esquema.tertiaryContainer : null,
       child: ExpansionTile(
         initiallyExpanded: p.gano,
-        title: Text(estado.carton.alias,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          estado.carton.alias,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

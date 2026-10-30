@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+
 import '../dominio/tipo_juego.dart';
 
 part 'base_datos.g.dart';
@@ -37,7 +38,7 @@ class PartidaCartones extends Table {
 class Balotas extends Table {
   IntColumn get partidaId =>
       integer().references(Partidas, #id, onDelete: KeyAction.cascade)();
-   // ignore: recursive_getters
+  // ignore: recursive_getters
   IntColumn get numero => integer().check(numero.isBetweenValues(1, 75))();
   IntColumn get orden => integer()();
 
@@ -49,15 +50,15 @@ class Balotas extends Table {
 class BaseDatos extends _$BaseDatos {
   /// Sin parámetro usa el archivo del celular; en pruebas se pasa una base en memoria.
   BaseDatos([QueryExecutor? ejecutor])
-      : super(ejecutor ?? driftDatabase(name: 'bingo'));
+    : super(ejecutor ?? driftDatabase(name: 'bingo'));
 
   @override
   int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        beforeOpen: (detalles) async {
-          await customStatement('PRAGMA foreign_keys = ON');
-        },
-      );
+    beforeOpen: (detalles) async {
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 }

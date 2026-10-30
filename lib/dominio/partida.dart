@@ -34,9 +34,13 @@ class EstadoTabla {
 
 /// Tablas ordenadas de la más cercana a ganar a la más lejana.
 List<EstadoTabla> ordenarPorCercania(
-    List<Carton> cartones, Set<int> cantadas, List<Set<int>> figuras) {
+  List<Carton> cartones,
+  Set<int> cantadas,
+  List<Set<int>> figuras,
+) {
   final estados = [
-    for (final c in cartones) EstadoTabla(c, calcularProgreso(c, cantadas, figuras)),
+    for (final c in cartones)
+      EstadoTabla(c, calcularProgreso(c, cantadas, figuras)),
   ];
   estados.sort((a, b) => a.progreso.faltan.compareTo(b.progreso.faltan));
   return estados;

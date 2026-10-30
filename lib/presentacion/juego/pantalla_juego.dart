@@ -14,7 +14,8 @@ class PantallaJuego extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final balotas = ref.watch(balotasProvider(config.id)).value ?? const <int>[];
+    final balotas =
+        ref.watch(balotasProvider(config.id)).value ?? const <int>[];
     final todas = ref.watch(cartonesProvider).value ?? const <Carton>[];
     final cartones = [
       for (final c in todas)
@@ -33,7 +34,9 @@ class PantallaJuego extends ConsumerWidget {
             tooltip: 'Deshacer última balota',
             onPressed: balotas.isEmpty
                 ? null
-                : () => ref.read(repositorioPartidasProvider).deshacerUltima(config.id),
+                : () => ref
+                      .read(repositorioPartidasProvider)
+                      .deshacerUltima(config.id),
           ),
           TextButton.icon(
             icon: const Icon(Icons.flag),
@@ -45,32 +48,39 @@ class PantallaJuego extends ConsumerWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: Column(children: [
-            Text(
-              ultima == null
-                  ? 'Toca cada número que cante el juez'
-                  : 'Balotas: ${balotas.length}  ·  Última: ${_conLetra(ultima)}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              flex: 3,
-              child: TablaMaestra(
-                cantadas: cantadas,
-                ultima: ultima,
-                alTocar: (n) => _cantar(context, ref, n, cartones, cantadas),
+          child: Column(
+            children: [
+              Text(
+                ultima == null
+                    ? 'Toca cada número que cante el juez'
+                    : 'Balotas: ${balotas.length}  ·  Última: ${_conLetra(ultima)}',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              flex: 2,
-              child: ListView(children: [
-                for (final e in estados)
-                  TarjetaProgreso(
-                      key: ValueKey(e.carton.id), estado: e, cantadas: cantadas),
-              ]),
-            ),
-          ]),
+              const SizedBox(height: 8),
+              Expanded(
+                flex: 3,
+                child: TablaMaestra(
+                  cantadas: cantadas,
+                  ultima: ultima,
+                  alTocar: (n) => _cantar(context, ref, n, cartones, cantadas),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                flex: 2,
+                child: ListView(
+                  children: [
+                    for (final e in estados)
+                      TarjetaProgreso(
+                        key: ValueKey(e.carton.id),
+                        estado: e,
+                        cantadas: cantadas,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -78,18 +88,26 @@ class PantallaJuego extends ConsumerWidget {
 
   String _conLetra(int n) => '${letras[(n - 1) ~/ 15]} $n';
 
-  Future<void> _cantar(BuildContext context, WidgetRef ref, int numero,
-      List<Carton> cartones, Set<int> cantadas) async {
+  Future<void> _cantar(
+    BuildContext context,
+    WidgetRef ref,
+    int numero,
+    List<Carton> cartones,
+    Set<int> cantadas,
+  ) async {
     final figuras = config.figuras;
-    final ganadorasAntes = ordenarPorCercania(cartones, cantadas, figuras)
-        .where((e) => e.progreso.gano)
-        .length;
+    final ganadorasAntes = ordenarPorCercania(
+      cartones,
+      cantadas,
+      figuras,
+    ).where((e) => e.progreso.gano).length;
 
     await ref.read(repositorioPartidasProvider).cantar(config.id, numero);
 
-    final ganadoras = ordenarPorCercania(cartones, {...cantadas, numero}, figuras)
-        .where((e) => e.progreso.gano)
-        .toList();
+    final ganadoras = ordenarPorCercania(cartones, {
+      ...cantadas,
+      numero,
+    }, figuras).where((e) => e.progreso.gano).toList();
 
     if (ganadoras.length > ganadorasAntes) {
       await HapticFeedback.heavyImpact();
@@ -98,10 +116,14 @@ class PantallaJuego extends ConsumerWidget {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('¡BINGO!'),
-          content: Text('Ganó: ${ganadoras.map((e) => e.carton.alias).join(', ')}'),
+          content: Text(
+            'Ganó: ${ganadoras.map((e) => e.carton.alias).join(', ')}',
+          ),
           actions: [
             FilledButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('Seguir')),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Seguir'),
+            ),
           ],
         ),
       );
@@ -116,9 +138,13 @@ class PantallaJuego extends ConsumerWidget {
         content: const Text('Volverás a Mis tablas.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true), child: const Text('Finalizar')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Finalizar'),
+          ),
         ],
       ),
     );
