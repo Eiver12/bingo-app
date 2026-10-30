@@ -73,6 +73,21 @@ class _PantallaEscanearState extends ConsumerState<PantallaEscanear> {
           const SizedBox(height: 16),
           if (_cargando) const Center(child: CircularProgressIndicator()),
           if (resultado != null) ...[
+            if (resultado.otroFormato) ...[
+              Card(
+                color: Theme.of(context).colorScheme.errorContainer,
+                child: const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text(
+                    'Esta tabla no parece de bingo de 75 balotas '
+                    '(B 1-15, I 16-30, N 31-45, G 46-60, O 61-75). '
+                    'La app solo admite ese formato, así que la lectura '
+                    'puede estar equivocada.',
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               'Leyó ${resultado.leidas} de 24 casillas'
               '${resultado.dudosas.isEmpty ? '' : ' · ${resultado.dudosas.length} por revisar'}',

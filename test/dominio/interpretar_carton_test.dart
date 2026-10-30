@@ -89,4 +89,40 @@ void main() {
     expect(r.numeros[2][0], 1);
     expect(r.dudosas, contains(10));
   });
+  test('una "o" pegada a un dígito se lee como 0 (prueba 2)', () {
+    final simbolos = [
+      for (final s in simbolosDe(tabla))
+        // el 0 del 60 (fila 1, columna G) leído como letra "o"
+        if (s.texto == '0' && s.cy == 150)
+          Simbolo('o', s.izq, s.arriba, s.der, s.abajo)
+        else
+          s,
+    ];
+    final r = interpretarCarton(simbolos);
+    expect(r.numeros[0][3], 60);
+  });
+
+  test('no une cifras vecinas si el número pasaría de 75 (prueba 4)', () {
+    // "9" y "23" muy juntos, como en "9233850".
+    const simbolos = [
+      Simbolo('9', 0, 0, 28, 50),
+      Simbolo('2', 32, 0, 60, 50),
+      Simbolo('3', 62, 0, 90, 50),
+    ];
+    final r = interpretarCarton(simbolos);
+    expect(r.numeros[0][0], 9);
+    expect(r.numeros[0][1], 23);
+  });
+
+  test('avisa cuando la tabla parece de 90 balotas (prueba 1)', () {
+    final simbolos = <Simbolo>[];
+    for (final (i, par) in [('8', '5'), ('8', '3'), ('9', '0')].indexed) {
+      final x = i * 100.0;
+      simbolos
+        ..add(Simbolo(par.$1, x, 0, x + 28, 50))
+        ..add(Simbolo(par.$2, x + 30, 0, x + 58, 50));
+    }
+    expect(interpretarCarton(simbolos).otroFormato, isTrue);
+    expect(interpretarCarton(simbolosDe(tabla)).otroFormato, isFalse);
+  });
 }
