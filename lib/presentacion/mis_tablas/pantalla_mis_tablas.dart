@@ -188,6 +188,36 @@ class _TarjetaPartidaEnCurso extends ConsumerWidget {
   const _TarjetaPartidaEnCurso(this.config);
   final ConfigPartida config;
 
+  Future<void> _confirmarDescartar(
+    BuildContext context,
+    WidgetRef ref,
+    int balotas,
+  ) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Descartar partida?'),
+        content: Text(
+          'Se perderá la partida en curso ($balotas balotas cantadas). '
+          'Tus tablas no se borran.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado == true) {
+      await ref.read(repositorioPartidasProvider).finalizar(config.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final balotas = ref.watch(balotasProvider(config.id)).value?.length ?? 0;
@@ -212,9 +242,7 @@ class _TarjetaPartidaEnCurso extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => ref
-                      .read(repositorioPartidasProvider)
-                      .finalizar(config.id),
+                  onPressed: () => _confirmarDescartar(context, ref, balotas),
                   child: const Text('Descartar'),
                 ),
                 const SizedBox(width: 8),

@@ -71,8 +71,7 @@ class PantallaJuego extends ConsumerWidget {
                         child: TablaMaestra(
                           cantadas: cantadas,
                           ultima: ultima,
-                          alTocar: (n) =>
-                              _cantar(context, ref, n, cartones, cantadas),
+                          alTocar: (n) => _cantar(context, ref, n, cartones),
                         ),
                       ),
                     ],
@@ -102,13 +101,17 @@ class PantallaJuego extends ConsumerWidget {
     WidgetRef ref,
     int numero,
     List<Carton> cartones,
-    Set<int> cantadas,
   ) async {
+    // Las balotas previas salen de la base, no de la pantalla: con dos toques
+    // seguidos la pantalla todavía no ha mostrado el primero.
+    final cantadas = await ref
+        .read(repositorioPartidasProvider)
+        .cantar(config.id, numero);
+    if (cantadas == null) return; // ya estaba cantada
+
     final figuras = config.figuras;
     final ganadoras = recienGanadoras(cartones, cantadas, numero, figuras);
     final aUna = recienAUnaBalota(cartones, cantadas, numero, figuras);
-
-    await ref.read(repositorioPartidasProvider).cantar(config.id, numero);
 
     if (ganadoras.isNotEmpty) {
       await HapticFeedback.heavyImpact();

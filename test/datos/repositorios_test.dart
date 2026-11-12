@@ -62,6 +62,29 @@ void main() {
     expect(await partidas.observarBalotas(pId).first, [5]);
   });
 
+  test(
+    'dos balotas cantadas a la vez quedan en orden y se ven entre sí',
+    () async {
+      final cId = await cartones.guardar(cartonDePrueba);
+      final pId = await partidas.crear(TipoJuego.cuatroEsquinas, [cId]);
+      // Sin esperar entre una y otra, como dos toques seguidos.
+      final previas = await Future.wait([
+        partidas.cantar(pId, 5),
+        partidas.cantar(pId, 70),
+        partidas.cantar(pId, 5), // repetida
+      ]);
+      expect(previas, [
+        <int>{},
+        {5},
+        null,
+      ]);
+      expect(await partidas.observarBalotas(pId).first, [5, 70]);
+
+      await partidas.deshacerUltima(pId);
+      expect(await partidas.observarBalotas(pId).first, [5]);
+    },
+  );
+
   test('borrar una tabla la quita de las partidas', () async {
     final cId = await cartones.guardar(cartonDePrueba);
     final pId = await partidas.crear(TipoJuego.linea, [cId]);
