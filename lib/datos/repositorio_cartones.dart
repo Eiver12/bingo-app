@@ -9,7 +9,7 @@ class RepositorioCartones {
   RepositorioCartones(this._db);
   final BaseDatos _db;
 
-  Future<int> guardar(Carton carton, {String? fotoPath}) {
+  Future<int> guardar(Carton carton) {
     final plano = [for (final fila in carton.numeros) ...fila];
     return _db
         .into(_db.cartones)
@@ -17,7 +17,7 @@ class RepositorioCartones {
           CartonesCompanion.insert(
             alias: carton.alias,
             numeros: jsonEncode(plano),
-            fotoPath: Value(fotoPath),
+            fotoPath: Value(carton.fotoPath),
           ),
         );
   }
@@ -37,6 +37,7 @@ class RepositorioCartones {
       id: r.id,
       alias: r.alias,
       numeros: [for (var f = 0; f < 5; f++) plano.sublist(f * 5, f * 5 + 5)],
+      fotoPath: r.fotoPath,
     );
   }
 }

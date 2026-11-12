@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/dominio/partida.dart';
