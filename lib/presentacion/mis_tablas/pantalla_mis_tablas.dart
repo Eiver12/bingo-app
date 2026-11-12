@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/dominio/partida.dart';
@@ -87,6 +89,12 @@ class PantallaMisTablas extends ConsumerWidget {
                                         .titleMedium,
                                   ),
                                 ),
+                                if (_tieneFoto(carton))
+                                  IconButton(
+                                    icon: const Icon(Icons.image_outlined),
+                                    tooltip: 'Ver foto',
+                                    onPressed: () => _verFoto(context, carton),
+                                  ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline),
                                   tooltip: 'Eliminar',
@@ -130,8 +138,50 @@ class PantallaMisTablas extends ConsumerWidget {
     );
     if (confirmado == true) {
       await ref.read(repositorioCartonesProvider).eliminar(carton.id!);
+      await ref.read(almacenFotosProvider).borrar(carton.fotoPath);
     }
   }
+
+  bool _tieneFoto(Carton carton) {
+    final ruta = carton.fotoPath;
+    return ruta != null && File(ruta).existsSync();
+  }
+
+  void _verFoto(BuildContext context, Carton carton) => showDialog<void>(
+    context: context,
+    builder: (ctx) => Dialog(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    carton.alias,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+          ),
+          // Pellizca para acercar y comparar con la tabla física.
+          Flexible(
+            child: InteractiveViewer(
+              maxScale: 5,
+              child: Image.file(File(carton.fotoPath!)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _TarjetaPartidaEnCurso extends ConsumerWidget {

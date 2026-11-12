@@ -6,8 +6,14 @@ class Carton {
   final int? id;
   final String alias;
   final List<List<int>> numeros; // [fila][columna]; 0 = casilla libre
+  final String? fotoPath; // foto de la tabla física, si se escaneó
 
-  Carton({this.id, required this.alias, required this.numeros}) {
+  Carton({
+    this.id,
+    required this.alias,
+    required this.numeros,
+    this.fotoPath,
+  }) {
     final errores = validar(numeros);
     if (errores.isNotEmpty) throw ArgumentError(errores.join('\n'));
   }

@@ -39,6 +39,9 @@ class _Grupo {
   String get texto => simbolos.map((s) => s.texto).join();
 }
 
+/// Un número ya armado, con el centro de su recuadro.
+typedef _Leido = ({int valor, double cx, double cy});
+
 double _mediana(List<double> valores) {
   final ordenados = [...valores]..sort();
   return ordenados[ordenados.length ~/ 2];
@@ -50,6 +53,40 @@ Set<int> _todasMenosCentro() => {
   for (var i = 0; i < 25; i++)
     if (i != 12) i,
 };
+
+/// ¿Un número de una cifra (columna B) pudo perder una cifra al leerse?
+///
+/// Solo hay dos formas de que pase:
+/// - Perdió el "1" inicial: "13" leído como "3". La cifra que queda está
+///   corrida a la DERECHA y solo puede ser del 1 al 5 (11 a 15).
+/// - Perdió la segunda cifra: "14" leído como "1". El "1" que queda está
+///   corrido a la IZQUIERDA.
+/// Si el número completo ya se leyó en otra casilla, tampoco puede ser.
+bool _perdioUnaCifra(
+  _Leido n,
+  List<_Leido> validos,
+  Set<int> valoresLeidos,
+  double h,
+) {
+  // Se compara con los demás números de la columna B, no consigo mismo.
+  final vecinos = [
+    for (final o in validos)
+      if (o != n && _columnaDe(o.valor) == 0) o.cx,
+  ];
+  if (vecinos.isEmpty) return false;
+  final desvio = n.cx - _mediana(vecinos);
+  final umbral = h * 0.2;
+
+  final sinInicial =
+      desvio > umbral &&
+      n.valor <= 5 &&
+      !valoresLeidos.contains(10 + n.valor);
+  final sinFinal =
+      desvio < -umbral &&
+      n.valor == 1 &&
+      [for (var v = 10; v <= 15; v++) v].any((v) => !valoresLeidos.contains(v));
+  return sinInicial || sinFinal;
+}
 
 ResultadoLectura interpretarCarton(List<Simbolo> simbolos) {
   final numeros = List.generate(5, (_) => List<int?>.filled(5, null));
@@ -124,7 +161,7 @@ ResultadoLectura interpretarCarton(List<Simbolo> simbolos) {
   final otroFormato = paresMayores >= 3;
 
   // 5. Valores válidos (1 a 75).
-  final leidos = <({int valor, double cx, double cy})>[];
+  final leidos = <_Leido>[];
   for (final g in grupos) {
     final v = int.parse(g.texto);
     if (v >= 1 && v <= 75) leidos.add((valor: v, cx: g.cx, cy: g.cy));
@@ -158,6 +195,7 @@ ResultadoLectura interpretarCarton(List<Simbolo> simbolos) {
   final yMin = validos.map((n) => n.cy).reduce(min);
   final yMax = validos.map((n) => n.cy).reduce(max);
   final altoFila = (yMax - yMin) / 4;
+  final valoresLeidos = {for (final n in validos) n.valor};
   final dudosas = <int>{};
   for (final n in validos) {
     final f = altoFila <= 0
@@ -168,9 +206,7 @@ ResultadoLectura interpretarCarton(List<Simbolo> simbolos) {
     final actual = numeros[f][c];
     if (actual == null) {
       numeros[f][c] = n.valor;
-      // Un número de una cifra corrido del centro probablemente perdió una
-      // cifra (ej.: "11" leído como "1").
-      if (n.valor < 10 && (n.cx - centrosX[c]!).abs() > h * 0.2) {
+      if (n.valor < 10 && _perdioUnaCifra(n, validos, valoresLeidos, h)) {
         dudosas.add(f * 5 + c);
       }
     } else if (actual != n.valor) {

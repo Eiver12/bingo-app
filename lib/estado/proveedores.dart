@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bingo_app/datos/almacen_fotos.dart';
 import 'package:bingo_app/datos/base_datos.dart';
 import 'package:bingo_app/datos/repositorio_cartones.dart';
 import 'package:bingo_app/datos/repositorio_partidas.dart';
@@ -34,6 +35,8 @@ final balotasProvider = StreamProvider.family<List<int>, int>(
 );
 
 final servicioFotoProvider = Provider((ref) => ServicioFoto());
+
+final almacenFotosProvider = Provider((ref) => AlmacenFotos());
 
 final lectorOcrProvider = Provider((ref) {
   final lector = LectorOcr();

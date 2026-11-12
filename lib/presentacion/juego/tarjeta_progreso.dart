@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:bingo_app/dominio/partida.dart';
 import 'package:bingo_app/dominio/progreso.dart';
 import 'package:bingo_app/presentacion/comun/cuadricula_carton.dart';

@@ -38,6 +38,15 @@ List<Simbolo> simbolosDe(List<List<int>> numeros) {
   return r;
 }
 
+/// Corre a la derecha (dx > 0) o a la izquierda los dígitos de una casilla.
+List<Simbolo> correr(List<Simbolo> simbolos, int f, int c, double dx) => [
+  for (final s in simbolos)
+    if (s.cy == 150 + f * 100.0 && s.cx > c * 100 && s.cx < c * 100 + 100)
+      Simbolo(s.texto, s.izq + dx, s.arriba, s.der + dx, s.abajo)
+    else
+      s,
+];
+
 void main() {
   test('lee una tabla limpia sin dudas', () {
     final r = interpretarCarton(simbolosDe(tabla));
@@ -124,5 +133,24 @@ void main() {
     }
     expect(interpretarCarton(simbolos).otroFormato, isTrue);
     expect(interpretarCarton(simbolosDe(tabla)).otroFormato, isFalse);
+  });
+
+  test('un número de una cifra corrido no siempre es dudoso', () {
+    // El 6 corrido: no existe el 16 en la columna B, no pudo perder cifra.
+    final r1 = interpretarCarton(correr(simbolosDe(tabla), 1, 0, 14));
+    expect(r1.numeros[1][0], 6);
+    expect(r1.dudosas, isEmpty);
+
+    // El 3 corrido a la IZQUIERDA: si fuera un 13 sin el "1",
+    // estaría corrido a la derecha.
+    final r2 = interpretarCarton(correr(simbolosDe(tabla), 4, 0, -14));
+    expect(r2.numeros[4][0], 3);
+    expect(r2.dudosas, isEmpty);
+  });
+
+  test('un 3 corrido a la derecha puede ser un 13 y queda dudoso', () {
+    final r = interpretarCarton(correr(simbolosDe(tabla), 4, 0, 14));
+    expect(r.numeros[4][0], 3);
+    expect(r.dudosas, {20});
   });
 }

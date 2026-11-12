@@ -38,6 +38,18 @@ void main() {
     expect(todas.single.numeros, cartonDePrueba.numeros);
   });
 
+  test('guarda la ruta de la foto de la tabla', () async {
+    await cartones.guardar(
+      Carton(
+        alias: 'Con foto',
+        numeros: cartonDePrueba.numeros,
+        fotoPath: '/fotos/tabla_1.jpg',
+      ),
+    );
+    final guardada = (await cartones.observarTodos().first).single;
+    expect(guardada.fotoPath, '/fotos/tabla_1.jpg');
+  });
+
   test('cantar, ignorar repetidas y deshacer', () async {
     final cId = await cartones.guardar(cartonDePrueba);
     final pId = await partidas.crear(TipoJuego.cuatroEsquinas, [cId]);
