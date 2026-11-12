@@ -93,13 +93,24 @@ class _PantallaAgregarTablaState extends ConsumerState<PantallaAgregarTabla> {
     if (temporal != null) {
       try {
         foto = await ref.read(almacenFotosProvider).guardar(temporal);
-      } on FileSystemException {
+      } catch (_) {
         foto = null; // si la copia falla, la tabla se guarda sin foto
       }
     }
-    await ref
-        .read(repositorioCartonesProvider)
-        .guardar(Carton(alias: alias, numeros: numeros, fotoPath: foto));
+    try {
+      await ref
+          .read(repositorioCartonesProvider)
+          .guardar(Carton(alias: alias, numeros: numeros, fotoPath: foto));
+    } catch (_) {
+      // No se guardó: se borra la copia de la foto y se deja reintentar.
+      await ref.read(almacenFotosProvider).borrar(foto).catchError((_) {});
+      if (!mounted) return;
+      setState(() {
+        _guardando = false;
+        _errores = ['No se pudo guardar la tabla. Intenta de nuevo.'];
+      });
+      return;
+    }
     if (!mounted) return;
     // Vuelve a "Mis tablas", venga de la cámara o de "Agregar a mano".
     Navigator.popUntil(context, (ruta) => ruta.isFirst);

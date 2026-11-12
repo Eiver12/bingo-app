@@ -69,18 +69,27 @@ class RepositorioPartidas {
           .watch()
           .map((filas) => [for (final b in filas) b.numero]);
 
-  Future<void> cantar(int partidaId, int numero) async {
-    final actuales = await _balotasDe(partidaId).get();
-    await _db
-        .into(_db.balotas)
-        .insert(
-          BalotasCompanion.insert(
-            partidaId: partidaId,
-            numero: numero,
-            orden: actuales.length + 1,
-          ),
-          mode: InsertMode.insertOrIgnore, // si ya se cantó, no pasa nada
-        );
+  /// Canta una balota y devuelve las que ya estaban cantadas justo antes,
+  /// o null si este número ya se había cantado (no pasa nada).
+  ///
+  /// Va en una transacción: dos toques seguidos se atienden uno tras otro,
+  /// así cada balota recibe un orden distinto y ve a la anterior.
+  Future<Set<int>?> cantar(int partidaId, int numero) {
+    return _db.transaction(() async {
+      final actuales = await _balotasDe(partidaId).get();
+      final previas = {for (final b in actuales) b.numero};
+      if (previas.contains(numero)) return null;
+      await _db
+          .into(_db.balotas)
+          .insert(
+            BalotasCompanion.insert(
+              partidaId: partidaId,
+              numero: numero,
+              orden: actuales.isEmpty ? 1 : actuales.last.orden + 1,
+            ),
+          );
+      return previas;
+    });
   }
 
   Future<void> deshacerUltima(int partidaId) async {
