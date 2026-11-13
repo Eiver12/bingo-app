@@ -45,3 +45,43 @@ List<EstadoTabla> ordenarPorCercania(
   estados.sort((a, b) => a.progreso.faltan.compareTo(b.progreso.faltan));
   return estados;
 }
+
+/// Tablas que ganan justo con este número (no habían ganado antes).
+List<EstadoTabla> recienGanadoras(
+  List<Carton> cartones,
+  Set<int> cantadas,
+  int numero,
+  List<Set<int>> figuras,
+) {
+  final antes = {
+    for (final e in ordenarPorCercania(cartones, cantadas, figuras))
+      if (e.progreso.gano) e.carton.id,
+  };
+  return [
+    for (final e in ordenarPorCercania(cartones, {
+      ...cantadas,
+      numero,
+    }, figuras))
+      if (e.progreso.gano && !antes.contains(e.carton.id)) e,
+  ];
+}
+
+/// Tablas que quedan a una balota justo con este número.
+List<EstadoTabla> recienAUnaBalota(
+  List<Carton> cartones,
+  Set<int> cantadas,
+  int numero,
+  List<Set<int>> figuras,
+) {
+  final antes = {
+    for (final e in ordenarPorCercania(cartones, cantadas, figuras))
+      if (e.progreso.aUnaBalota) e.carton.id,
+  };
+  return [
+    for (final e in ordenarPorCercania(cartones, {
+      ...cantadas,
+      numero,
+    }, figuras))
+      if (e.progreso.aUnaBalota && !antes.contains(e.carton.id)) e,
+  ];
+}

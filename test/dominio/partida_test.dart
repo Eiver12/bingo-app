@@ -49,4 +49,40 @@ void main() {
     );
     expect(config.descripcion, 'Por columna G');
   });
+
+  test('detecta la tabla que acaba de quedar a una balota', () {
+    const config = ConfigPartida(
+      id: 1,
+      tipo: TipoJuego.cuatroEsquinas,
+      cartonIds: [1, 2],
+    );
+    final nuevas = recienAUnaBalota([roja, azul], {5, 70}, 1, config.figuras);
+    expect(nuevas.single.carton.alias, 'Roja');
+    expect(nuevas.single.progreso.numerosFaltantes, [63]);
+
+    // Un número que no acerca a nadie no genera aviso.
+    expect(
+      recienAUnaBalota([roja, azul], {5, 70}, 40, config.figuras),
+      isEmpty,
+    );
+  });
+
+  test('una tabla que ya ganó no vuelve a avisar', () {
+    const config = ConfigPartida(
+      id: 1,
+      tipo: TipoJuego.cuatroEsquinas,
+      cartonIds: [1, 2],
+    );
+    final figuras = config.figuras;
+    expect(
+      recienGanadoras(
+        [roja, azul],
+        {5, 70, 1},
+        63,
+        figuras,
+      ).single.carton.alias,
+      'Roja',
+    );
+    expect(recienGanadoras([roja, azul], {5, 70, 1, 63}, 40, figuras), isEmpty);
+  });
 }

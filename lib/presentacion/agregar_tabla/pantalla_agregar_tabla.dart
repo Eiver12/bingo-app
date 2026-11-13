@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
@@ -33,6 +33,7 @@ class _PantallaAgregarTablaState extends ConsumerState<PantallaAgregarTabla> {
   final _casillas = List.generate(25, (_) => TextEditingController());
   late final Set<int> _porRevisar = {...widget.dudosas};
   List<String> _errores = [];
+  bool _guardando = false;
 
   bool get _desdeCamara => widget.inicial != null;
 
@@ -85,12 +86,31 @@ class _PantallaAgregarTablaState extends ConsumerState<PantallaAgregarTabla> {
       return;
     }
 
-    await ref
-        .read(repositorioCartonesProvider)
-        .guardar(
-          Carton(alias: alias, numeros: numeros),
-          fotoPath: widget.fotoPath,
-        );
+    setState(() => _guardando = true);
+    // La foto recortada está en la caché; se copia a la carpeta de la app.
+    String? foto;
+    final temporal = widget.fotoPath;
+    if (temporal != null) {
+      try {
+        foto = await ref.read(almacenFotosProvider).guardar(temporal);
+      } catch (_) {
+        foto = null; // si la copia falla, la tabla se guarda sin foto
+      }
+    }
+    try {
+      await ref
+          .read(repositorioCartonesProvider)
+          .guardar(Carton(alias: alias, numeros: numeros, fotoPath: foto));
+    } catch (_) {
+      // No se guardó: se borra la copia de la foto y se deja reintentar.
+      await ref.read(almacenFotosProvider).borrar(foto).catchError((_) {});
+      if (!mounted) return;
+      setState(() {
+        _guardando = false;
+        _errores = ['No se pudo guardar la tabla. Intenta de nuevo.'];
+      });
+      return;
+    }
     if (!mounted) return;
     // Vuelve a "Mis tablas", venga de la cámara o de "Agregar a mano".
     Navigator.popUntil(context, (ruta) => ruta.isFirst);
@@ -215,7 +235,7 @@ class _PantallaAgregarTablaState extends ConsumerState<PantallaAgregarTabla> {
               ],
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: _guardar,
+                onPressed: _guardando ? null : _guardar,
                 icon: const Icon(Icons.save),
                 label: const Text('Guardar tabla'),
               ),

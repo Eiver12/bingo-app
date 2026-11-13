@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/dominio/partida.dart';
@@ -19,7 +19,48 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
   int _columna = 0;
   Set<int>? _seleccionadas; // null = todavía no se inicializa
 
+  bool _empezando = false; // evita crear dos partidas con un doble toque
+
   Future<void> _empezar() async {
+    if (_empezando) return;
+    setState(() => _empezando = true);
+    try {
+      await _crearYAbrir();
+    } finally {
+      if (mounted) setState(() => _empezando = false);
+    }
+  }
+
+  /// Crear una partida finaliza la que esté en curso: se pide permiso antes.
+  Future<bool> _confirmarReemplazo() async {
+    final enCurso = await ref.read(partidaEnCursoProvider.future);
+    if (enCurso == null) return true;
+    if (!mounted) return false;
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ya hay una partida en curso'),
+        content: Text(
+          'Si empiezas una nueva, la partida "${enCurso.descripcion}" '
+          'se dará por terminada y no podrás retomarla.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Empezar nueva'),
+          ),
+        ],
+      ),
+    );
+    return confirmado == true;
+  }
+
+  Future<void> _crearYAbrir() async {
+    if (!await _confirmarReemplazo()) return;
     final ids = _seleccionadas!.toList();
     final columna = _tipo == TipoJuego.columna ? _columna : null;
     final id = await ref
@@ -117,7 +158,9 @@ class _PantallaNuevaPartidaState extends ConsumerState<PantallaNuevaPartida> {
                     ),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: seleccionadas.isEmpty ? null : _empezar,
+                    onPressed: seleccionadas.isEmpty || _empezando
+                        ? null
+                        : _empezar,
                     icon: const Icon(Icons.play_arrow),
                     label: const Text('Empezar partida'),
                   ),

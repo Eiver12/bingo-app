@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:bingo_app/datos/almacen_fotos.dart';
 import 'package:bingo_app/datos/base_datos.dart';
 import 'package:bingo_app/datos/repositorio_cartones.dart';
 import 'package:bingo_app/datos/repositorio_partidas.dart';
 import 'package:bingo_app/dominio/carton.dart';
 import 'package:bingo_app/datos/lector_ocr.dart';
 import 'package:bingo_app/datos/servicio_foto.dart';
+import 'package:bingo_app/dominio/partida.dart';
 
 /// Una sola base de datos para toda la app.
 final baseDatosProvider = Provider<BaseDatos>((ref) {
@@ -34,8 +36,15 @@ final balotasProvider = StreamProvider.family<List<int>, int>(
 
 final servicioFotoProvider = Provider((ref) => ServicioFoto());
 
+final almacenFotosProvider = Provider((ref) => AlmacenFotos());
+
 final lectorOcrProvider = Provider((ref) {
   final lector = LectorOcr();
   ref.onDispose(lector.cerrar);
   return lector;
 });
+
+/// Partida sin terminar (null si no hay). Se actualiza sola.
+final partidaEnCursoProvider = StreamProvider<ConfigPartida?>(
+  (ref) => ref.watch(repositorioPartidasProvider).observarEnCurso(),
+);

@@ -1,11 +1,15 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bingo_app/dominio/carton.dart';
+import 'package:bingo_app/dominio/partida.dart';
 import 'package:bingo_app/estado/proveedores.dart';
 import 'package:bingo_app/presentacion/agregar_tabla/pantalla_agregar_tabla.dart';
 import 'package:bingo_app/presentacion/comun/cuadricula_carton.dart';
-import 'package:bingo_app/presentacion/nueva_partida/pantalla_nueva_partida.dart';
 import 'package:bingo_app/presentacion/escanear/pantalla_escanear.dart';
+import 'package:bingo_app/presentacion/juego/pantalla_juego.dart';
+import 'package:bingo_app/presentacion/nueva_partida/pantalla_nueva_partida.dart';
 
 class PantallaMisTablas extends ConsumerWidget {
   const PantallaMisTablas({super.key});
@@ -13,6 +17,7 @@ class PantallaMisTablas extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cartones = ref.watch(cartonesProvider);
+    final enCurso = ref.watch(partidaEnCursoProvider).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -59,13 +64,15 @@ class PantallaMisTablas extends ConsumerWidget {
         data: (lista) => lista.isEmpty
             ? const Center(
                 child: Text(
-                  'Aún no tienes tablas.\nAgrega la primera con el botón de abajo.',
+                  'Aún no tienes tablas.\n'
+                  'Escanea o agrega la primera con los botones de abajo.',
                   textAlign: TextAlign.center,
                 ),
               )
             : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 160),
                 children: [
+                  if (enCurso != null) _TarjetaPartidaEnCurso(enCurso),
                   for (final carton in lista)
                     Card(
                       child: Padding(
@@ -82,6 +89,12 @@ class PantallaMisTablas extends ConsumerWidget {
                                         .titleMedium,
                                   ),
                                 ),
+                                if (_tieneFoto(carton))
+                                  IconButton(
+                                    icon: const Icon(Icons.image_outlined),
+                                    tooltip: 'Ver foto',
+                                    onPressed: () => _verFoto(context, carton),
+                                  ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline),
                                   tooltip: 'Eliminar',
@@ -125,6 +138,129 @@ class PantallaMisTablas extends ConsumerWidget {
     );
     if (confirmado == true) {
       await ref.read(repositorioCartonesProvider).eliminar(carton.id!);
+      await ref.read(almacenFotosProvider).borrar(carton.fotoPath);
     }
+  }
+
+  bool _tieneFoto(Carton carton) {
+    final ruta = carton.fotoPath;
+    return ruta != null && File(ruta).existsSync();
+  }
+
+  void _verFoto(BuildContext context, Carton carton) => showDialog<void>(
+    context: context,
+    builder: (ctx) => Dialog(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    carton.alias,
+                    style: Theme.of(ctx).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+          ),
+          // Pellizca para acercar y comparar con la tabla física.
+          Flexible(
+            child: InteractiveViewer(
+              maxScale: 5,
+              child: Image.file(File(carton.fotoPath!)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _TarjetaPartidaEnCurso extends ConsumerWidget {
+  const _TarjetaPartidaEnCurso(this.config);
+  final ConfigPartida config;
+
+  Future<void> _confirmarDescartar(
+    BuildContext context,
+    WidgetRef ref,
+    int balotas,
+  ) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Descartar partida?'),
+        content: Text(
+          'Se perderá la partida en curso ($balotas balotas cantadas). '
+          'Tus tablas no se borran.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmado == true) {
+      await ref.read(repositorioPartidasProvider).finalizar(config.id);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final balotas = ref.watch(balotasProvider(config.id)).value?.length ?? 0;
+    final tema = Theme.of(context);
+
+    return Card(
+      color: tema.colorScheme.secondaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Partida en curso', style: tema.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              '${config.descripcion} · ${config.cartonIds.length} '
+              '${config.cartonIds.length == 1 ? 'tabla' : 'tablas'} · '
+              '$balotas balotas cantadas',
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => _confirmarDescartar(context, ref, balotas),
+                  child: const Text('Descartar'),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PantallaJuego(config: config),
+                    ),
+                  ),
+                  icon: const Icon(Icons.play_arrow),
+                  label: const Text('Continuar'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

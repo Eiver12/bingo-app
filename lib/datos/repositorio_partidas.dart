@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../dominio/partida.dart';
 import '../dominio/tipo_juego.dart';
 import 'base_datos.dart';
 
@@ -8,12 +9,16 @@ class RepositorioPartidas {
   final BaseDatos _db;
 
   /// Crea la partida y le asocia las tablas en una sola transacción.
+  /// Si había otra partida sin terminar, la finaliza.
   Future<int> crear(
     TipoJuego tipo,
     List<int> cartonIds, {
     int? columnaDesignada,
   }) {
     return _db.transaction(() async {
+      await (_db.update(_db.partidas)..where((p) => p.finalizada.equals(false)))
+          .write(const PartidasCompanion(finalizada: Value(true)));
+
       final id = await _db
           .into(_db.partidas)
           .insert(
@@ -36,6 +41,24 @@ class RepositorioPartidas {
     });
   }
 
+  /// La partida sin terminar, si existe. Se actualiza sola.
+  Stream<ConfigPartida?> observarEnCurso() {
+    final consulta = _db.select(_db.partidas)
+      ..where((p) => p.finalizada.equals(false))
+      ..orderBy([(p) => OrderingTerm.desc(p.id)])
+      ..limit(1);
+    return consulta.watchSingleOrNull().asyncMap(
+      (p) async => p == null
+          ? null
+          : ConfigPartida(
+              id: p.id,
+              tipo: p.tipoJuego,
+              cartonIds: await cartonesDe(p.id),
+              columnaDesignada: p.columnaDesignada,
+            ),
+    );
+  }
+
   SimpleSelectStatement<$BalotasTable, Balota> _balotasDe(int partidaId) =>
       _db.select(_db.balotas)
         ..where((b) => b.partidaId.equals(partidaId))
@@ -46,18 +69,27 @@ class RepositorioPartidas {
           .watch()
           .map((filas) => [for (final b in filas) b.numero]);
 
-  Future<void> cantar(int partidaId, int numero) async {
-    final actuales = await _balotasDe(partidaId).get();
-    await _db
-        .into(_db.balotas)
-        .insert(
-          BalotasCompanion.insert(
-            partidaId: partidaId,
-            numero: numero,
-            orden: actuales.length + 1,
-          ),
-          mode: InsertMode.insertOrIgnore, // si ya se cantó, no pasa nada
-        );
+  /// Canta una balota y devuelve las que ya estaban cantadas justo antes,
+  /// o null si este número ya se había cantado (no pasa nada).
+  ///
+  /// Va en una transacción: dos toques seguidos se atienden uno tras otro,
+  /// así cada balota recibe un orden distinto y ve a la anterior.
+  Future<Set<int>?> cantar(int partidaId, int numero) {
+    return _db.transaction(() async {
+      final actuales = await _balotasDe(partidaId).get();
+      final previas = {for (final b in actuales) b.numero};
+      if (previas.contains(numero)) return null;
+      await _db
+          .into(_db.balotas)
+          .insert(
+            BalotasCompanion.insert(
+              partidaId: partidaId,
+              numero: numero,
+              orden: actuales.isEmpty ? 1 : actuales.last.orden + 1,
+            ),
+          );
+      return previas;
+    });
   }
 
   Future<void> deshacerUltima(int partidaId) async {

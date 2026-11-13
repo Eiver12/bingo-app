@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:bingo_app/datos/lector_ocr.dart';
@@ -23,18 +24,57 @@ class _PantallaEscanearState extends ConsumerState<PantallaEscanear> {
   bool _cargando = false;
 
   Future<void> _escanear(ImageSource origen) async {
-    final ruta = await ref.read(servicioFotoProvider).obtenerTabla(origen);
+    final String? ruta;
+    try {
+      ruta = await ref.read(servicioFotoProvider).obtenerTabla(origen);
+    } on PlatformException catch (e) {
+      _avisar(_mensajeDeError(e, origen)); // permiso negado, sin cámara...
+      return;
+    }
     if (ruta == null) return; // el usuario canceló
+
     setState(() => _cargando = true);
-    final lectura = await ref.read(lectorOcrProvider).leer(ruta);
-    final resultado = interpretarCarton(LectorOcr.simbolos(lectura));
+    try {
+      final lectura = await ref.read(lectorOcrProvider).leer(ruta);
+      final resultado = interpretarCarton(LectorOcr.simbolos(lectura));
+      if (!mounted) return;
+      setState(() {
+        _ruta = ruta;
+        _lectura = lectura;
+        _resultado = resultado;
+      });
+    } catch (_) {
+      _avisar(
+        'No se pudo leer la foto. Intenta de nuevo con más luz '
+        'o agrega la tabla a mano.',
+      );
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  String _mensajeDeError(PlatformException e, ImageSource origen) =>
+      switch (e.code) {
+        'camera_access_denied' =>
+          'La app no tiene permiso para usar la cámara. Actívalo en '
+              'Ajustes > Aplicaciones > bingo_app > Permisos, '
+              'o usa el botón Galería.',
+        'photo_access_denied' =>
+          'La app no tiene permiso para ver tus fotos. Actívalo en '
+              'Ajustes > Aplicaciones > bingo_app > Permisos.',
+        'no_available_camera' =>
+          'No se encontró una cámara disponible. Usa el botón Galería.',
+        _ =>
+          'No se pudo abrir la '
+              '${origen == ImageSource.camera ? 'cámara' : 'galería'} '
+              '(${e.code}).',
+      };
+
+  void _avisar(String mensaje) {
     if (!mounted) return;
-    setState(() {
-      _ruta = ruta;
-      _lectura = lectura;
-      _resultado = resultado;
-      _cargando = false;
-    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje), duration: const Duration(seconds: 6)),
+    );
   }
 
   @override
